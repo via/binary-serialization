@@ -1,0 +1,72 @@
+struct VarSizedMessage {
+  u8 count
+  u32 another
+  *i16 numbers[count < 32]
+  u8 final
+}
+
+struct Message {
+  u32 time
+  u8 count
+
+  /* Fixed size array of 32 f32 */
+  f32 nums[32]
+
+  /* Up to 32 f32s, determined by count.
+   * However, the storage is still a fixed block of 32
+   * elements, padded with zeroes */
+  f32 countnums[count<32]
+
+  /* Up to 32 f32,s determined by count. the '*' indicates
+   * that the container is variable sized, and only uses the space that is
+   * needed for the count */
+  *f32 variable_sized[count<32]
+
+  u8 unpacked /* All elements are word aligned by default, so there are three
+               *  padding zero bytes after 'unpacked '*/
+  pack {
+    /* packed elements, on the other hand, do not pad between
+     * elements. The pack beginning is still aligned, and the end is
+     * padded to a 32 bit word */
+    u8 packed1 
+    u8 packed2
+  }
+
+  VarSizedMessage singlebleh
+  VarSizedMessage bleh[8]
+
+  union<packed> {
+    match(0x10) u8 m1
+    match(12) {
+      u16 one
+      u32 two
+    }
+  }
+  u8 last
+}
+
+
+struct AdcUpdate { }
+struct TriggerUpdate { }
+struct CalculationsUpdate { }
+
+enum ConsoleMessageType<u8> {
+  AdcUpdate = 1
+  TriggerUpdate = 2
+  CalculationsUpdate = 3
+}
+
+struct ConsoleMessage {
+  ConsoleMessageType type
+  union<type> {
+    match(AdcUpdate) AdcUpdate adc
+    match(TriggerUpdate) TriggerUpdate trigger
+    match(CalculationsUpdate) {
+      CalculationsUpdate calcs
+    }
+  }
+
+}
+
+
+

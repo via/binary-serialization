@@ -1,0 +1,36 @@
+TYPE: CNAME
+NAME: CNAME
+VARSIZE: "*"
+
+NUMBER: INT
+      | "0x" HEXDIGIT+
+
+_fixedarray: "[" NUMBER "]"
+_vararray: "[" NAME "<" NUMBER "]"
+
+entry : TYPE NAME -> single
+      | TYPE NAME _fixedarray -> fixedarray
+      | [VARSIZE] TYPE NAME _vararray -> vararray
+      | [VARSIZE] _union -> union
+      | _pack -> pack
+
+_block : "{" entry* "}"
+       | entry
+
+match: "match" "(" (NUMBER | NAME) ")" _block
+struct : "struct" NAME _block -> struct
+_pack : "pack" _block
+_union : "union" "<" NAME ">" "{" match* "}"
+enum_entry : NAME "=" NUMBER
+enum : "enum" NAME "<" TYPE ">" "{" enum_entry* "}"
+
+file : (struct | enum)*
+
+COMMENT: "/*" /(.|\n)*?/ "*/"
+
+%import common.CNAME 
+%import common.INT 
+%import common.HEXDIGIT 
+%import common.WS 
+%ignore WS
+%ignore COMMENT
