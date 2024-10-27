@@ -1,5 +1,14 @@
 #include "utils.h"
 
+@[for enum in enums]@
+enum @(enum.name) {
+@[ for name, value in enum.values.items()]@
+  @(enum.name)_@name = @value,
+@[ end for]@
+};
+
+@[end for]@
+
 @[for struct in structs.values()]@
 struct @(struct.name)_bytes {
   uint8_t *bytes;
@@ -68,6 +77,8 @@ static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct
 @[    end if]@
 @[    if entry.is_builtin()]@   
   return decode_@(entry.typ)(&b.bytes[offset]);
+@[    elif entry.is_enum()]@
+  return (@(entry.get_ctype()))decode_@(entry.container())(&b.bytes[offset]);
 @[    else]@
   return (@(entry.get_ctype())){ .bytes = &b.bytes[offset] };
 @[    end if]@

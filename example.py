@@ -74,11 +74,17 @@ class Entry:
 
     def is_enum(self):
         t = types[self.typ]
-        if isinstance(t, BuiltinType):
+        if isinstance(t, Enum):
             return True
         else:
             return False
-    
+
+    def container(self):
+        t = types[self.typ]
+        if isinstance(t, Enum):
+            return t.container
+        return None
+
     def is_struct(self):
         t = types[self.typ]
         if isinstance(t, Structure):
@@ -200,6 +206,7 @@ parser = lark.Lark(open("syntax.lark", "r"), start="file")
 text = open("t1.expr", "r").read()
 decoded = parser.parse(text)
 structs = {}
+enums = []
 
 for toplevel_entry in decoded.children:
     if toplevel_entry.data == "struct":
@@ -211,10 +218,12 @@ for toplevel_entry in decoded.children:
     elif toplevel_entry.data == "enum":
         e = Enum(toplevel_entry)
         types[e.name] = e
+        enums.append(e)
 
 template = open("bleh.em", "r").read()
 expanded = em.expand(template, globals={
     "structs": structs,
+    "enums": enums,
     "EntrySize": EntrySize,
     "Fixed": Fixed,
     "Lookup": Lookup,
