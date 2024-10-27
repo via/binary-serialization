@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import lark
 import em
-import pprint
+import sys
 
 @dataclass
 class BuiltinType:
@@ -107,7 +107,10 @@ class Entry:
         elif isinstance(self, FixedArray):
             count = Fixed(self.count)
         elif isinstance(self, VariableArray):
-            count = Lookup(self.count_spec)
+            if self.is_packed:
+                count = Lookup(self.count_spec)
+            else:
+                count = Fixed(self.capacity)
 
         t = types[self.typ]
         if isinstance(t, BuiltinType):
@@ -203,7 +206,7 @@ class Structure:
 
 
 parser = lark.Lark(open("syntax.lark", "r"), start="file")
-text = open("t1.expr", "r").read()
+text = open(sys.argv[1], "r").read()
 decoded = parser.parse(text)
 structs = {}
 enums = []

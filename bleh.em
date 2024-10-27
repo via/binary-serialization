@@ -34,7 +34,7 @@ struct @(struct.name)_bytes {
   }
 @[      case EntrySize(count=Lookup(c), size=Lookup(s))]@
   {
-    const size_t count = @(struct.name)_get_@c(b);
+    const size_t count = @(struct.name)_get_@(c)(b);
     for (size_t i = 0; i < count; i++) {
       @(entry.get_ctype()) element = {&b.bytes[@var] };
       @var += @(s)_size(element);
