@@ -21,10 +21,9 @@ types = {
 
         "f32": BuiltinType(4, "float"),
         "f64": BuiltinType(8, "double"),
-}
 
-class UnionEntry:
-    pass
+        "bool": BuiltinType(1, "bool"),
+}
 
 class Enum:
     def __init__(self, tree):
@@ -36,12 +35,17 @@ class Enum:
             value = elem.children[1].value
             self.values[key] = value
 
+@dataclass
+class UnionBranch:
+    selector: str
+    match: str
 
 @dataclass
 class Entry:
     typ: str
     name: str
     aligned: bool
+    union: None | UnionBranch
 
     def get_ctype(self):
         t = types[self.typ]
@@ -167,13 +171,14 @@ class Structure:
         self.name = name
         self.entries = []
 
-    def add_entry(self, entry, aligned=True):
+    def add_entry(self, entry, aligned=True, union=None):
         if entry.data == "single":
             self.entries.append(
                     Scalar(
                         typ=entry.children[0].value,
                         name=entry.children[1].value,
-                        aligned=aligned)
+                        aligned=aligned,
+                        union=union)
                     )
         elif entry.data == "fixedarray":
             self.entries.append(
@@ -181,7 +186,8 @@ class Structure:
                         typ=entry.children[0].value,
                         name=entry.children[1].value,
                         aligned=aligned,
-                        count=entry.children[2].value)
+                        count=entry.children[2].value,
+                        union=union)
                     )
         elif entry.data == "vararray":
             packed = True if entry.children[0] is not None else False
@@ -192,16 +198,21 @@ class Structure:
                         aligned=aligned,
                         count_spec=entry.children[3].value,
                         capacity=entry.children[4].value,
-                        is_packed=packed)
+                        is_packed=packed,
+                        union=union)
                     )
 
         elif entry.data == "union":
-            pass
+            varsize = entry.children[0]
+            selector = entry.children[1]
+            for child in entry.children[2:]:
+                u = UnionBranch(selector=selector, match=child.children[0])
+                self.add_entry(child.children[1], aligned=aligned, union=u)
         elif entry.data == "pack":
             for packed_entry in entry.children[0:1]:
-                self.add_entry(packed_entry, aligned=aligned)
+                self.add_entry(packed_entry, aligned=aligned, union=union)
             for packed_entry in entry.children[1:]:
-                self.add_entry(packed_entry, aligned=False)
+                self.add_entry(packed_entry, aligned=False, union=union)
 
 
 

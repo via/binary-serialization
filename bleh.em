@@ -43,7 +43,6 @@ struct @(struct.name)_bytes {
 @[    end match]@
 @[end def]@
 
-
 @[  for entry in struct.entries]@
 @[    if entry.is_array()]@   
 static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct @(struct.name)_bytes b, size_t idx) {
@@ -55,10 +54,16 @@ static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct
 @[    if prior_entry == entry]@
 @[        break]@
 @[    end if]@
+@[    if prior_entry.union]@
+  if (@(struct.name)_has_@(prior_entry.name)(b)) {
+@[    end if]@
 @[    if prior_entry.render().aligned]@
   offset = align(offset);
 @[    end if]@
 @add_entry_size('offset', prior_entry)@
+@[    if prior_entry.union]@
+  }
+@[    end if]@
 
 @[    end for]@
 @[    if entry.render().aligned]@
@@ -83,15 +88,34 @@ static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct
   return (@(entry.get_ctype())){ .bytes = &b.bytes[offset] };
 @[    end if]@
 }
+@[  for later_entry in struct.entries]@
+@[    if later_entry.union and later_entry.union.selector == entry.name]@
+
+static inline bool @(struct.name)_has_@(later_entry.name)(const struct @(struct.name)_bytes b) {
+  if (@(struct.name)_get_@(later_entry.union.selector)(b) == @(later_entry.union.match)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+@[    end if]@
+@[  end for]@
+
 @[  end for]@
 
 static inline size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
   size_t size = 0;
 @[  for entry in struct.entries]@
+@[    if entry.union]@
+  if (@(struct.name)_has_@(entry.name)(b)) {
+@[    end if]@
 @[    if entry.render().aligned]@
   size = align(size);
 @[    end if]@
 @add_entry_size('size', entry)@
+@[    if entry.union]@
+  }
+@[    end if]@
 
 @[  end for]@
   size = align(size);

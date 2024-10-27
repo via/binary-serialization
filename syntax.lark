@@ -17,7 +17,7 @@ entry : TYPE NAME -> single
 _block : "{" entry* "}"
        | entry
 
-match: "match" "(" (NUMBER | NAME) ")" _block
+match: "match" "(" (NUMBER | NAME) ")" entry
 struct : "struct" NAME _block -> struct
 _pack : "pack" _block
 _union : "union" "<" NAME ">" "{" match* "}"

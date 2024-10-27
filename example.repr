@@ -9,7 +9,7 @@ struct AdcRawUpdate {
 struct AnotherUpdate {
   u32 time              /* Encode a U32 */
   u16 count             /* Encode a U16, still takes 4 bytes */
-  f32 *inputs[count<16] /* Encode a float array, variable sized serialization up
+  *f32 inputs[count<16] /* Encode a float array, variable sized serialization up
                            16 entries */
   u16 bleh[count<16]    /* Encode a U16 array, fixed size serialization, 16
                            entries */
@@ -18,11 +18,12 @@ struct AnotherUpdate {
     u8 one              /* Encode a U8, start is still 4 byte aligned */
     u8 two              /* Encode a U8 immediately after `one` */
     u16 three           /* Encode a U16 immediately after two */
-    u8 four             /* Encode a U8 immediately after three
+    u8 four             /* Encode a U8 immediately after three */
   }                     /* Still padded to four bytes */
 }
 
 /* Interface from hardware to main loop. Raw trigger input event */
+
 struct TriggerRawUpdate {
   u32 time
   u8 trigger
@@ -48,12 +49,14 @@ struct CalculatedValues {
   bool is_fuel_overduty_cut
 }
 
-struct ScheduleUpdate {
-  struct {
+struct ScheduleEntry {
     bool is_scheduled
     u32 start
     u32 end
-  } outputs[16]
+}
+
+struct ScheduleUpdate {
+  ScheduleEntry outputs[16]
 }
 
 
@@ -66,6 +69,7 @@ struct EngineUpdate {
   ScheduleUpdate schedule
 }
 
+/*
 struct ConsoleMessage {
   u32 time
   oneof message {
@@ -88,3 +92,4 @@ struct ConsoleMessage {
   } message_type;
   union {
     struct ScheduleUpdate
+*/

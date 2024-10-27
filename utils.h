@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 static inline void encode_u32le(uint8_t *bytes, uint32_t value) {
