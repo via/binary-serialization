@@ -16,6 +16,21 @@ struct @(struct.name)_bytes {
 @[      case EntrySize(count=Lookup(c), size=Fixed(s))]@
   /* @entry.name -> sizeof(@(entry.get_ctype())[@c]))) */
   @var += (@(struct.name)_get_@(c)(b) * @s);
+@[      case EntrySize(count=Fixed(1), size=Lookup(s))]@
+  @var += @(s)_size((@(entry.get_ctype())){&b.bytes[@var]}); 
+@[      case EntrySize(count=Fixed(c), size=Lookup(s))]@
+  for (size_t i = 0; i < @c; i++) {
+    @(entry.get_ctype()) element = {&b.bytes[@var] };
+    @var += @(s)_size(element);
+  }
+@[      case EntrySize(count=Lookup(c), size=Lookup(s))]@
+  {
+    const size_t count = @(struct.name)_get_@c(b);
+    for (size_t i = 0; i < count; i++) {
+      @(entry.get_ctype()) element = {&b.bytes[@var] };
+      @var += @(s)_size(element);
+    }
+  }
 @[    end match]@
 @[end def]@
 
@@ -35,9 +50,21 @@ static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct
   offset = align(offset);
 @[    end if]@
 @add_entry_size('offset', prior_entry)@
+
 @[    end for]@
 @[    if entry.render().aligned]@
   offset = align(offset);
+@[    end if]@
+@[    if entry.is_array()]@
+@[      match entry.render()]@
+@[        case EntrySize(size=Fixed(s))]@
+  offset += (@s * idx);
+@[        case EntrySize(size=Lookup(s))]@
+  for (size_t i = 0; i < idx; i++) {
+    @(entry.get_ctype()) element = {&b.bytes[offset] };
+    offset += @(s)_size(element);
+  }
+@[      end match]@
 @[    end if]@
 @[    if entry.is_builtin()]@   
   return decode_@(entry.typ)(&b.bytes[offset]);
@@ -54,6 +81,7 @@ static inline size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
   size = align(size);
 @[    end if]@
 @add_entry_size('size', entry)@
+
 @[  end for]@
   size = align(size);
 

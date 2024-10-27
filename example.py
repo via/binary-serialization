@@ -148,7 +148,7 @@ class VariableArray(Entry):
     count_spec: str
     is_packed: bool
 
-    def is_variable_array(self):
+    def is_array(self):
         return True
 
 class Structure:
