@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 static inline void encode_u32le(uint8_t *bytes, uint32_t value) {
   bytes[0] = value & 0xFF;
@@ -11,11 +12,15 @@ static inline void encode_u32le(uint8_t *bytes, uint32_t value) {
   bytes[3] = (value >> 24) & 0xFF;
 }
 
+
 static inline uint32_t decode_u32le(const uint8_t *bytes) {
   return ((uint32_t)bytes[3] << 24) |
          ((uint32_t)bytes[2] << 16) |
          ((uint32_t)bytes[1] << 8) |
          ((uint32_t)bytes[0]);
+}
+static inline uint32_t decode_u32(const uint8_t *bytes) {
+  return decode_u32le(bytes);
 }
 
 static inline void encode_u16le(uint8_t *bytes, uint16_t value) {
@@ -24,10 +29,19 @@ static inline void encode_u16le(uint8_t *bytes, uint16_t value) {
 }
 
 static inline uint16_t decode_u16le(const uint8_t *bytes) {
-  return ((uint32_t)bytes[3] << 24) |
-         ((uint32_t)bytes[2] << 16) |
-         ((uint32_t)bytes[1] << 8) |
+  return ((uint32_t)bytes[1] << 8) |
          ((uint32_t)bytes[0]);
+}
+static inline uint16_t decode_u16(const uint8_t *bytes) {
+  return decode_u16le(bytes);
+}
+static inline uint16_t decode_i16(const uint8_t *bytes) {
+  return ((uint32_t)bytes[1] << 8) |
+         ((uint32_t)bytes[0]);
+}
+
+static inline uint8_t decode_u8(const uint8_t *bytes) {
+  return bytes[0];
 }
 
 static inline float decode_f32le(const uint8_t *bytes) {
@@ -38,9 +52,8 @@ static inline float decode_f32le(const uint8_t *bytes) {
 }
 
 /* Returns size rounded up to 32-bit word */
-static inline size_t pad(const size_t size) {
-  size_t overflow = size & 0x3; /* Number of bytes past 4 byte alignment */
-  return (size & ~0x3UL) + (overflow ? 4 : 0); 
+static inline size_t align(const size_t size) {
+  return (size + 3) & ~((size_t)0x3);
 }
 
 #endif

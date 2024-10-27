@@ -5,46 +5,40 @@ struct @(struct.name)_bytes {
   uint8_t *bytes;
 };
 
-size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
-  size_t size = 
-@[for e in struct.entries]@
-@[    if e.is_scalar() and (e.is_builtin() or e.is_enum())]@
-                      + @(e.size()) /* @e.name -> sizeof(@(e.get_ctype())) (@(e.padded ? 'padded' ! 'packed' )) */
-@[    if e.is_array() and not e.is_varsize() and (e.is_builtin() or e.is_enum())]@
-                      + (@(e.count) * @(e.size())) /* @e.name -> [sizeof(@(e.get_ctype()))] (@(e.padded ? 'padded' ! 'packed' )) */
-@# Scalar of a struct
-@[    elif e.is_scalar() and e.is_struct()]@
-@[        if e.is_array()]@
-@[        else]@
-                      + @(e.typ)_size(@(struct.name)_get_@(e.name)(b))
-@[        end if]@
-@[    elif e.is_array() and not e.is_varsize()]@
-                      + @(e.size
-@[    end if]@
-@[end for]@
-}
+@[def add_entry_size(var, entry)]@
+@[    match entry.render()]@
+@[      case EntrySize(count=Fixed(1), size=Fixed(s))]@
+  /* @entry.name -> sizeof(@(entry.get_ctype())))) */
+  @var += @(s);
+@[      case EntrySize(count=Fixed(c), size=Fixed(s))]@
+  /* @entry.name -> sizeof(@(entry.get_ctype())[@c]))) */
+  @var += (@c * @s);
+@[      case EntrySize(count=Lookup(c), size=Fixed(s))]@
+  /* @entry.name -> sizeof(@(entry.get_ctype())[@c]))) */
+  @var += (@(struct.name)_get_@(c)(b) * @s);
+@[    end match]@
+@[end def]@
+
 
 @[  for entry in struct.entries]@
 @[    if entry.is_array()]@   
-@(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct @(struct.name)_bytes b, size_t idx) {
+static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct @(struct.name)_bytes b, size_t idx) {
 @[    else]@
-@(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct @(struct.name)_bytes b) {
+static inline @(entry.get_ctype()) @(struct.name)_get_@(entry.name)(const struct @(struct.name)_bytes b) {
 @[    end if]@
-  const size_t offset = 0
+  size_t offset = 0;
 @[    for prior_entry in struct.entries]@
 @[    if prior_entry == entry]@
 @[        break]@
 @[    end if]@
-@# There are several cases we will handle individually
-@# Scalar of fixed-size built-in or enum, directly produce the size:
-@[    if prior_entry.is_scalar() and (prior_entry.is_builtin() or prior_entry.is_enum())]@
-                      + @(prior_entry.size()) /* @prior_entry.name -> sizeof(@(prior_entry.get_ctype())) (@(prior_entry.padded ? 'padded' ! 'packed' )) */
-@# Scalar of a struct
-@[    elif prior_entry.is_scalar() and prior_entry.is_struct()]@
-                      + @(prior_entry.typ)_size(@(struct.name)_get_@(prior_entry.name)(b))
+@[    if prior_entry.render().aligned]@
+  offset = align(offset);
 @[    end if]@
+@add_entry_size('offset', prior_entry)@
 @[    end for]@
-                       ;
+@[    if entry.render().aligned]@
+  offset = align(offset);
+@[    end if]@
 @[    if entry.is_builtin()]@   
   return decode_@(entry.typ)(&b.bytes[offset]);
 @[    else]@
@@ -52,6 +46,20 @@ size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
 @[    end if]@
 }
 @[  end for]@
+
+static inline size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
+  size_t size = 0;
+@[  for entry in struct.entries]@
+@[    if entry.render().aligned]@
+  size = align(size);
+@[    end if]@
+@add_entry_size('size', entry)@
+@[  end for]@
+  size = align(size);
+
+  return size;
+}
+
 
 @[end for]@
 

@@ -23,13 +23,6 @@ types = {
         "f64": BuiltinType(8, "double"),
 }
 
-def pad4(size: int):
-    overflow = size % 4
-    if overflow == 0:
-        return size
-    else:
-        return size + (4 - overflow)
-
 class UnionEntry:
     pass
 
@@ -48,7 +41,7 @@ class Enum:
 class Entry:
     typ: str
     name: str
-    padded: bool
+    aligned: bool
 
     def get_ctype(self):
         t = types[self.typ]
@@ -72,20 +65,6 @@ class Entry:
         if isinstance(t, Structure):
             return any([x.is_varsize for x in t.entries])
         return True
-
-    def size(self):
-        if self.is_varsize():
-            raise Exception("not fixed size")
-        t = types[self.typ]
-        size = None
-        if isinstance(t, BuiltinType):
-            size = t.size
-        else:
-            raise Exception("not implemented")
-        if self.padded:
-            return pad4(size)
-        else:
-            return size
 
     def is_array(self):
         return False
@@ -114,14 +93,40 @@ class Entry:
         else:
             return False
 
-# Size/offset rendering paths:
-# - (array of) fixed size scalar, built-in or enum:
-#   capacity/count * sizeof()
-# - scalar struct
-#   Struct_get()
-# - array of structs
-#   loop over capacity/count Struct_get()
+    def render(self):
+        count = None
+        size = None
+        if isinstance(self, Scalar):
+            count = Fixed(1)
+        elif isinstance(self, FixedArray):
+            count = Fixed(self.count)
+        elif isinstance(self, VariableArray):
+            count = Lookup(self.count_spec)
 
+        t = types[self.typ]
+        if isinstance(t, BuiltinType):
+            size = Fixed(t.size)
+        if isinstance(t, Enum):
+            ct = types[t.container]
+            size = Fixed(ct.size)
+        elif isinstance(t, Structure):
+            size = Lookup(t.name)
+
+        return EntrySize(count=count, size=size, aligned=self.aligned)
+
+@dataclass
+class Fixed:
+    size: int
+
+@dataclass
+class Lookup:
+    element: str
+
+@dataclass
+class EntrySize:
+    count: Fixed | Lookup
+    size: Fixed | Lookup
+    aligned: bool
 
 
 @dataclass
@@ -153,20 +158,20 @@ class Structure:
         self.name = name
         self.entries = []
 
-    def add_entry(self, entry):
+    def add_entry(self, entry, aligned=True):
         if entry.data == "single":
             self.entries.append(
                     Scalar(
                         typ=entry.children[0].value,
                         name=entry.children[1].value,
-                        padded=True)
+                        aligned=aligned)
                     )
         elif entry.data == "fixedarray":
             self.entries.append(
                     FixedArray(
                         typ=entry.children[0].value,
                         name=entry.children[1].value,
-                        padded=True,
+                        aligned=aligned,
                         count=entry.children[2].value)
                     )
         elif entry.data == "vararray":
@@ -175,16 +180,19 @@ class Structure:
                     VariableArray(
                         typ=entry.children[1].value,
                         name=entry.children[2].value,
-                        padded=True,
-                        capacity=entry.children[3].value,
-                        count_spec=entry.children[4].value,
+                        aligned=aligned,
+                        count_spec=entry.children[3].value,
+                        capacity=entry.children[4].value,
                         is_packed=packed)
                     )
 
         elif entry.data == "union":
             pass
         elif entry.data == "pack":
-            pass
+            for packed_entry in entry.children[0:1]:
+                self.add_entry(packed_entry, aligned=aligned)
+            for packed_entry in entry.children[1:]:
+                self.add_entry(packed_entry, aligned=False)
 
 
 
@@ -205,8 +213,12 @@ for toplevel_entry in decoded.children:
         types[e.name] = e
 
 template = open("bleh.em", "r").read()
-expanded = em.expand(template, locals={
-    "structs": structs
+expanded = em.expand(template, globals={
+    "structs": structs,
+    "EntrySize": EntrySize,
+    "Fixed": Fixed,
+    "Lookup": Lookup,
+
     })
 
 print(expanded)

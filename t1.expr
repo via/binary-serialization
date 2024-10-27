@@ -30,6 +30,8 @@ struct Message {
      * padded to a 32 bit word */
     u8 packed1 
     u8 packed2
+    u8 packed3
+    u8 packed4
   }
 
   VarSizedMessage singlebleh
