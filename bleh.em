@@ -118,7 +118,6 @@ static inline size_t @(struct.name)_size(const struct @(struct.name)_bytes b) {
 @[    end if]@
 
 @[  end for]@
-  size = align(size);
 
   return size;
 }

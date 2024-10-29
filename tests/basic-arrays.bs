@@ -1,0 +1,15 @@
+struct TestFixed {
+  u8 one[3]
+  u16 two[3]
+}
+
+struct TestVariable {
+  u8 count
+  u8 one[count<16]
+}
+
+struct TestVariablePacked {
+  u8 count
+  *u8 one[count<16]
+}
+

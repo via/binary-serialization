@@ -1,0 +1,14 @@
+struct AllPack {
+  pack {
+    u8 one
+    u16 two
+    u32 three
+  }
+}
+
+struct PackedInside {
+  pack {
+    AllPack pack
+    u8 last /* This should be adjacent to `three` */
+  }
+}

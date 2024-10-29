@@ -1,0 +1,14 @@
+/* Showcase the different builtin types */
+struct TestTypes {
+  u32 one
+  u32 two
+  u16 three
+  u16 four
+  u8 five
+  u8 six
+  bool seven
+  i32 eight
+  u64 nine
+  i8 ten
+}
+
