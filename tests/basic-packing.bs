@@ -12,3 +12,12 @@ struct PackedInside {
     u8 last /* This should be adjacent to `three` */
   }
 }
+
+struct PackedArray {
+  PackedInside packs[2]
+}
+
+struct UnpackedArray {
+  AllPack packs[2]
+  u8 last
+}
