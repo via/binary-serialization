@@ -11,6 +11,9 @@ CFLAGS=-I. -I ..
 
 all: $(HEADERS) $(TESTS)
 
+check: all
+	for t in ${TESTS}; do ./$$t ; echo $$t: $$? ; done
+
 clean:
 	-rm $(TESTS)
 	-rm $(HEADERS)

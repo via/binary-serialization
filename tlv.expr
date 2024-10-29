@@ -1,0 +1,31 @@
+
+struct Type1 {
+  u32 src
+  u32 dst
+  u8 payload[16]
+}
+
+struct Type2 {
+  u16 src
+  u16 dst
+  u8 payload[8]
+}
+
+enum Type<u8> {
+  Type1 = 1
+  Type2 = 2
+}
+
+struct TLV {
+  Type type
+  union<type> {
+    match(Type_Type1) Type1 type1
+    match(Type_Type2) Type2 type2
+  }
+}
+
+struct Payload {
+  u8 count
+  *TLV values[count<8]
+}
+
