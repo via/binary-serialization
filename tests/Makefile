@@ -1,7 +1,8 @@
 
 TESTS= basic-builtins \
        basic-arrays   \
-       basic-packing
+       basic-packing \
+       basic-unions
 
 HEADERS= $(addsuffix .h, ${TESTS})
 CFLAGS=-I. -I ..

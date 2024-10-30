@@ -1,0 +1,47 @@
+
+struct Fixed8 {
+  u8 one
+  u8 two[4]
+}
+
+struct Fixed16 {
+  u16 one
+  u16 two[4]
+}
+
+struct Var8 {
+  u8 count
+  *u8 one[count<8]
+}
+
+struct Var16 {
+  u16 count
+  *u16 one[count<8]
+}
+
+enum FixedType<u8> {
+  eight = 1
+  sixteen = 2
+}
+
+enum VarType<u8> {
+  eight = 3
+  sixteen = 4
+}
+
+struct FixedUnion {
+  FixedType type
+  union<type> {
+    match(FixedType_eight) Fixed8 eight
+    match(FixedType_sixteen) Fixed16 sixteen
+  }
+}
+
+struct VarUnion {
+  VarType type
+  union<type> {
+    match(VarType_eight) Var8 eight
+    match(VarType_sixteen) Var16 sixteen
+  }
+}
+    
